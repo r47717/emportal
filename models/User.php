@@ -35,9 +35,8 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
     public static function getUserById($id)
     {
         $connection = Yii::$app->db;
-        $sql = "SELECT * FROM user WHERE id = " . $id;
-        $command = $connection->createCommand($sql);
-        $res = $command->queryOne();
+        $command = $connection->createCommand("SELECT * FROM user WHERE id = :id");
+        $res = $command->bindValue(':id', $id)->queryOne();
         return new User($res);
     }
 
@@ -50,27 +49,38 @@ class User extends \yii\base\Object implements \yii\web\IdentityInterface
     public static function deleteUser($id)
     {
         $connection = Yii::$app->db;
-        $sql = sprintf("DELETE FROM user WHERE id = %d", $id);
-        $command = $connection->createCommand($sql);
-        $command->query();
+        $command = $connection->createCommand("DELETE FROM user WHERE id = :id");
+        $command->bindValue(':id', $id)->query();
     }
 
     public static function updateUser($user)
     {
         $roleId = Yii::$app->db->createCommand("SELECT id FROM role WHERE name='" . $user['role'] . "'")->queryOne();
 
-        $sql = sprintf("UPDATE user SET name='%s', phone='%s', email='%s', roleId=%d WHERE id=%d", 
-            $user['name'], $user['phone'], $user['email'], $roleId['id'], $user['id']);
-        Yii::$app->db->createCommand($sql)->query();
+        //$sql = sprintf("UPDATE user SET name='%s', phone='%s', email='%s', roleId=%d WHERE id=%d", 
+        //    $user['name'], $user['phone'], $user['email'], $roleId['id'], $user['id']);
+        
+        Yii::$app->db->createCommand("UPDATE user SET name=:name, phone=:phone, email=:email, roleId=:role WHERE id=:id")
+            ->bindValue(':name', $user['name'])
+            ->bindValue(':phone', $user['phone'])
+            ->bindValue(':email', $user['email'])
+            ->bindValue(':role', $roleId['id'])
+            ->bindValue(':id', $user['id'])
+            ->query();
     }
 
     public static function addNewUser($user)
     {
         $connection = Yii::$app->db;
-        $sql = sprintf("INSERT INTO user VALUES (0, '%s', '%s', '%s', '%s', 2)", 
-            $user['name'], $user['phone'], $user['email'], md5($user['password']));
-        $command = $connection->createCommand($sql);
-        $command->query();
+        //$sql = sprintf("INSERT INTO user VALUES (0, '%s', '%s', '%s', '%s', 2)", 
+        //    $user['name'], $user['phone'], $user['email'], md5($user['password']));
+        
+        $connection->createCommand("INSERT INTO user VALUES (0, :name, :phone, :email, :pwd, 2)")
+            ->bindValue(':name', $user['name'])
+            ->bindValue(':phone', $user['phone'])
+            ->bindValue(':email', $user['email'])
+            ->bindValue(':pwd', md5($user['password']))
+            ->query();
     }
 
     public static function getUserTypes()
